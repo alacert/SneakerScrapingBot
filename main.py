@@ -9,7 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from bs4 import BeautifulSoup
 
-TOKEN = "ODExNzUwMjUwMTg4MjQyOTY1.YC2vVQ.Q1f87gKYS-CUwN0Tuxu47tLwDgU"
+TOKEN = "ODExNTE1MTc5NTQzNTYwMjEz.YCzUaA.m46HDxACdKShtq75WZtQrf3TEog"
 PREFIX = "."
 COLOR = 0xb17bff
 
