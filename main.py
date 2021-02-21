@@ -14,7 +14,7 @@ PREFIX = "."
 COLOR = 0xb17bff
 
 # The location of the firefox binary, NOTE: Will be different on different systems, will need to change!
-binary = FirefoxBinary('C:\\Program Files\\Mozilla Firefox\\firefox.exe')
+binary = FirefoxBinary('C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe')
 # Create the Selenium Browser to get our HTML
 driver = webdriver.Firefox(firefox_binary=binary)
 
@@ -107,11 +107,16 @@ async def stockx(ctx, url=""):
 
     for sneaker in sneaker_list:
         # Gets the Sneaker Size (and removes the "US" text at the start), and Gets the price
-        sneaker_size = sneaker.find_all("div", class_="title")[0].text[3:]
-        sneaker_price = sneaker.find_all("div", class_="subtitle")[0].text
+        sneaker_size = sneaker.find_all("div", class_="title")[0].text.strip()
+        sneaker_price = sneaker.find_all("div", class_="subtitle")[0].text.strip()
+
+        print(sneaker_size)
 
         # Omits the sneaker size with the value "All"
         if sneaker_size == "All":
+            continue
+
+        if sneaker_size in size_list:
             continue
 
         # Append the sneaker_size and sneaker_price to size_list and price_list respectively
@@ -168,6 +173,9 @@ async def goat(ctx, url=""):
         # Get the size and the price in dollars
         size = str(sneaker['size'])
         price = str(int((sneaker['lowestPriceCents']['amount']) / 100))
+
+        if size in size_list:
+            continue
 
         # Append these to size_list and price_list respectively
         size_list.append("Size " + size)
