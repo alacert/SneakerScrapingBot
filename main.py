@@ -174,12 +174,15 @@ async def goat(ctx, url=""):
         size = str(sneaker['size'])
         price = str(int((sneaker['lowestPriceCents']['amount']) / 100))
 
+        size = "Size " + size
+        price = "$" + price + ".00"
+
         if size in size_list:
             continue
 
         # Append these to size_list and price_list respectively
-        size_list.append("Size " + size)
-        price_list.append("$" + price + ".00")
+        size_list.append(size)
+        price_list.append(price)
 
     # Create embed with the information we just scraped
     await create_embed(size_list, price_list, "Goat prices for: " + name, ctx)
