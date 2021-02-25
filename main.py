@@ -258,8 +258,13 @@ async def ebay_ping(ctx, url="", count=0):
         return
 
     # Check if count is a number, if not return
-    if not count.isnumeric():
+    '''if not count.isnumeric():
         await ctx.reply("Error: " + count + " is not a valid number!")
+        return'''
+
+    try int(count):
+        pass
+    except:
         return
 
     if int(count) > max_pings:
