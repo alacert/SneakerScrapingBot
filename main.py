@@ -4,7 +4,9 @@ import json
 import aiohttp
 import validators
 import time
+import random
 from discord.ext import commands
+from discord.utils import get
 from selenium import webdriver
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from bs4 import BeautifulSoup
@@ -21,6 +23,45 @@ driver = webdriver.Firefox(firefox_binary=binary)
 # Initialize the discord bot
 bot = commands.Bot(command_prefix=PREFIX)
 bot.remove_command('help')
+
+async def update_data(users, user,server):
+    if not str(server.id) in users:
+        users[str(server.id)] = {}
+        if not str(user.id) in users[str(server.id)]:
+            users[str(server.id)][str(user.id)] = {}
+            users[str(server.id)][str(user.id)]['experience'] = 0
+    elif not str(user.id) in users[str(server.id)]:
+        users[str(server.id)][str(user.id)] = {}
+        users[str(server.id)][str(user.id)]['experience'] = 0
+
+
+async def add_experience(users, user, exp, server):
+    users[str(user.guild.id)][str(user.id)]['experience'] += exp
+
+
+async def check_assign_level(users, user, server):
+    num_of_messages = users[str(server.id)][str(user.id)]['experience']
+
+    if num_of_messages >= 25:
+        role = get(server.roles, name="Pink")
+        await user.add_roles(role)
+    if num_of_messages >= 100:
+        role = get(server.roles, name="Green")
+        await user.add_roles(role)
+
+
+async def level_system(message):
+    with open('level.json', 'r') as f:
+        users = json.load(f)
+
+    await update_data(users, message.author, message.guild)
+    await add_experience(users, message.author, 1, message.guild)
+    await check_assign_level(users, message.author, message.guild)
+
+    with open('level.json', 'w') as f:
+        json.dump(users, f)
+
+
 
 async def create_embed(top_list, bottom_list, title, ctx):
     # Create an embed with the two lists supplied and the title
@@ -52,9 +93,117 @@ def get_html(url):
     driver.get(url)
     return driver.page_source
 
+
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
+
+
+async def good_morning(message):
+    response_text = [
+        "Rise and shine",
+        "Top of the morning to you",
+        "Good day to you",
+        "Have a great day",
+        "Hello there",
+        "Wishing you the best for the day ahead",
+        "How are you this fine morning",
+        "Isn’t it a beautiful day today",
+        "Wakey, wakey, eggs and bakey",
+        "Look alive",
+        "Good morning, sleepy head/wakey wakey, sleepy head",
+        "Look at what the cat dragged in"
+        "What a pleasant morning we are having",
+        "How is your morning going so far",
+        "Morning"
+    ]
+    response = response_text[random.randint(0, len(response_text) - 1)]
+    await message.channel.send(response + ", " + message.author.mention)
+
+
+
+async def good_night(message):
+    response_text = [
+        "Nighty Night",
+        "Sweet dreams",
+        "Sleep well",
+        "Have a good sleep",
+        "Dream about me",
+        "Go to bed, you sleepy head",
+        "Sleep tight",
+        "Time to ride the rainbow to dreamland",
+        "Don’t forget to say your prayers",
+        "Goodnight, the little love of my life",
+        "Night Night",
+        "Lights out",
+        "See ya’ in the morning",
+        "I’ll be right here in the morning",
+        "I’ll be dreaming of you",
+        "Sleep well, my little prince/princess",
+        "Jesus loves you, and so do I",
+        "Sleep snug as a bug in a rug",
+        "Dream of me",
+        "Until tomorrow",
+        "Always and forever",
+        "I’ll be dreaming of your face",
+        "I’m so lucky to have you, Sweetheart",
+        "I love you to the stars and back",
+        "I’ll dream of you tonight and see you tomorrow, my love",
+        "I can’t imagine myself with anyone else",
+        "If you need me, you know where to find me",
+        "Goodnight, the love of my life",
+        "Can’t wait to wake up next to you"
+    ]
+    response = response_text[random.randint(0, len(response_text) - 1)]
+    await message.channel.send(response + ", " + message.author.mention)
+
+
+@bot.command(
+    name="8ball",
+    brief="Ask 8 ball questions"
+)
+async def eight_ball(ctx):
+    response_text = [
+        "As I see it, yes",
+        "Ask again later",
+        "Better not tell you now",
+        "Cannot predict now",
+        "Concentrate and ask again",
+        "Don’t count on it",
+        "It is certain",
+        "It is decidedly so",
+        "Most likely",
+        "My reply is no",
+        "My sources say no",
+        "Outlook not so good",
+        "Outlook good",
+        "Reply hazy, try again",
+        "Signs point to yes",
+        "Very doubtful",
+        "Without a doubt",
+        "Yes",
+        "Yes – definitely",
+        "You may rely on it"
+    ]
+
+    response = response_text[random.randint(0, len(response_text) - 1)]
+    await ctx.channel.send(response + ", " + ctx.author.mention)
+
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    await level_system(message)
+
+    if bot.user.mentioned_in(message):
+        if "gm" in message.content.lower():
+            await good_morning(message)
+        if "gn" in message.content.lower():
+            await good_night(message)
+
+    await bot.process_commands(message)
 
 
 @bot.command(
@@ -242,6 +391,27 @@ async def ebay(ctx, *, arg=""):
     await create_embed(item_names[:15], item_prices[:15], "Ebay results for: " + arg, ctx)
 
 
+@bot.command()
+async def fees(ctx, value: int):
+    embed = discord.Embed(title="Fees", color=0xffff00)
+
+    feeList = {
+        "PayPal": f"${(value - (value * 0.029)) - 0.30}",
+        "StockX Level 1": f"${value - (value * (0.095 + 0.03))}",
+        "StockX Level 2": f"${value - (value * (0.09 + 0.03))}",
+        "StockX Level 3": f"${value - (value * (0.085 + 0.03))}",
+        "StockX Level 4": f"${value - (value * (0.08 + 0.03))}",
+        "eBay": f"${value - (0.35 + (value * 0.10) + (value * 0.029) + 0.30)}",
+        "Mercari": f"${value - (value * 0.10) - (value * 0.029) - 0.30}"
+    }
+
+    for key, value in feeList.items():
+        embed.add_field(name=f'{key}', value=f'{value}')
+
+    embed.set_footer(text="These fees are estimates and are subject to change.")
+    await ctx.send(embed=embed)
+
+
 @bot.command(
     name="ebay-ping",
     brief="Pings an ebay URL x amount of times. Usage: .ebay [url] [number of times]"
@@ -257,13 +427,9 @@ async def ebay_ping(ctx, url="", count=0):
         await ctx.reply("Error: Wrong Arguments. Usage: `.ebay-ping [url] [number of times]`")
         return
 
-    # Check if count is a number, if not return
-    '''if not count.isnumeric():
+    try:
+        int(count)
         await ctx.reply("Error: " + count + " is not a valid number!")
-        return'''
-
-    try int(count):
-        pass
     except:
         return
 
