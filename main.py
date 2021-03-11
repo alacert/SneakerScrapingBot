@@ -63,11 +63,29 @@ async def level_system(message):
 
 
 
-async def create_embed(top_list, bottom_list, title, ctx):
+async def create_embed(top_list, bottom_list, title, url, ctx):
+    # Create an embed with the two lists supplied and the title
+
+
+    # Create the embed
+    embed = discord.Embed(title=title, url=url, color=COLOR)
+
+    # Iterate through each item in the list
+    for index in range(len(top_list)):
+        # Add field to the embed with the list with the value of top_list[index] and bottom_list [index]
+        embed.add_field(name=top_list[index], value=bottom_list[index], inline=True)
+
+    # Send the embed
+    await ctx.channel.send(embed=embed)
+
+
+async def create_embed_image(top_list, bottom_list, title, url, image_url, ctx):
     # Create an embed with the two lists supplied and the title
 
     # Create the embed
-    embed = discord.Embed(title=title, color=COLOR)
+    embed = discord.Embed(title=title, url=url, color=COLOR)
+
+    embed.set_thumbnail(url=image_url)
 
     # Iterate through each item in the list
     for index in range(len(top_list)):
@@ -250,6 +268,8 @@ async def stockx(ctx, url=""):
     sneaker_name = soup.find_all('h1', class_="name")[0].text
     sneaker_list = soup.find_all('ul', class_="sneakers")[0].find_all('li')
 
+    sneaker_image_url = soup.find_all('div', class_="image-container")[0].find_all("img")[0]["src"]
+
     # Creates an array that holds all the sizes and prices of the sneakers
     size_list = []
     price_list = []
@@ -270,10 +290,10 @@ async def stockx(ctx, url=""):
 
         # Append the sneaker_size and sneaker_price to size_list and price_list respectively
         size_list.append("Size " + sneaker_size)
-        price_list.append(sneaker_price + ".00")
+        price_list.append("**Lowest ask: **" + sneaker_price)
 
     # Creates the embed with the values we just scraped
-    await create_embed(size_list, price_list, "Stockx prices for: " + sneaker_name, ctx)
+    await create_embed_image(size_list, price_list, sneaker_name, url, sneaker_image_url, ctx)
 
 
 @bot.command(
@@ -307,6 +327,11 @@ async def goat(ctx, url=""):
     # Finally get to the part of the JSON that contains the data about the sneakers
     sneakers = (sneakers[item_id]['productVariants'])
 
+    try:
+        sneaker_image_url = soup.find_all("div", class_="ProductImageCarousel__Wrapper-yzm2o0-0")[0].find_all("img")[0]["src"]
+    except IndexError:
+        sneaker_image_url = "https://icon-library.com/images/no-image-icon/no-image-icon-0.jpg"
+
     # Try and get the Sneaker name, sometimes this fails so we'll use item_id as a backup
 
     try:
@@ -324,7 +349,7 @@ async def goat(ctx, url=""):
         price = str(int((sneaker['lowestPriceCents']['amount']) / 100))
 
         size = "Size " + size
-        price = "$" + price + ".00"
+        price = "**Lowest ask:** " + "$" + price
 
         if size in size_list:
             continue
@@ -334,7 +359,7 @@ async def goat(ctx, url=""):
         price_list.append(price)
 
     # Create embed with the information we just scraped
-    await create_embed(size_list, price_list, "Goat prices for: " + name, ctx)
+    await create_embed_image(size_list, price_list, name, url, sneaker_image_url, ctx)
 
 
 
@@ -354,9 +379,11 @@ async def ebay(ctx, *, arg=""):
     # Replace spaces in string with +
     search_term = arg.replace(" ", "+")
 
+    url = f"https://www.ebay.com/sch/i.html?_nkw={search_term}&_in_kw=1&_ex_kw=&_sacat=0&LH_Sold=1&_udlo=&_udhi=&_samilow=&_samihi=&_sargn=-1%26saslc%3D1&_salic=3&_sop=12&_dmd=1&_ipg=50&LH_Complete=1&_fosrp=1"
+
     # Create a aiohttp session and HTML GET the Ebay link with the search term send by the user
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://www.ebay.com/sch/i.html?_nkw={search_term}&_in_kw=1&_ex_kw=&_sacat=0&LH_Sold=1&_udlo=&_udhi=&_samilow=&_samihi=&_sargn=-1%26saslc%3D1&_salic=3&_sop=12&_dmd=1&_ipg=50&LH_Complete=1&_fosrp=1") as resp:
+        async with session.get(url) as resp:
             html = await resp.text()
 
     # Create the HTML parser
@@ -388,7 +415,7 @@ async def ebay(ctx, *, arg=""):
         item_prices.append(price)
 
     # Create embed with the values we scraped, only send the first 15 items of each array
-    await create_embed(item_names[:15], item_prices[:15], "Ebay results for: " + arg, ctx)
+    await create_embed(item_names[:15], item_prices[:15], "Ebay results for: " + arg, url, ctx)
 
 
 @bot.command()
